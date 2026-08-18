@@ -61,7 +61,7 @@ export default function PlatformerGame() {
   return (
     <div className="w-full max-w-[1000px] px-3">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border-4 border-hud-border bg-hud px-4 py-3 font-pixel text-xs text-hud-foreground shadow-arcade">
-        <Stat label="LIVES" value={"♥".repeat(Math.max(0, hud.lives)) || "—"} tone="danger" />
+        <Stat label="LIVES" value={`x${Math.max(0, hud.lives)}`} tone="danger" />
         <Stat label="COINS" value={`x${String(hud.coins).padStart(2, "0")}`} tone="gold" />
         <Stat label="SCORE" value={String(hud.score).padStart(6, "0")} />
         <Stat label="TIME" value={String(hud.time).padStart(3, "0")} tone={hud.time <= 30 ? "danger" : "default"} />
