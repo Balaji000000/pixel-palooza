@@ -1,24 +1,33 @@
 import { createFileRoute } from "@tanstack/react-router";
+import PlatformerGame from "@/components/PlatformerGame";
 
-// No head() here: the home route inherits title/description/og/twitter from
-// __root.tsx, and ships no og:image so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
 export const Route = createFileRoute("/")({
+  head: () => ({
+    meta: [
+      { title: "Acorn Run — Retro 2D Platformer Game" },
+      {
+        name: "description",
+        content:
+          "Play Acorn Run, a pixel-art side-scrolling platformer: run, jump, stomp enemies, collect coins and reach the flagpole.",
+      },
+      { property: "og:title", content: "Acorn Run — Retro 2D Platformer Game" },
+      {
+        property: "og:description",
+        content: "A vibrant retro arcade platformer built with HTML5 Canvas. Jump, stomp, and grab every coin.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
   component: Index,
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
 function Index() {
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
-    </div>
+    <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-gradient-arcade py-8">
+      <h1 className="font-pixel text-lg text-hud-foreground drop-shadow-md sm:text-2xl">ACORN RUN</h1>
+      <PlatformerGame />
+      <p className="font-pixel text-[9px] text-hud-foreground/70">MOVE ← → · JUMP SPACE · HOLD TO JUMP HIGHER</p>
+    </main>
   );
 }
