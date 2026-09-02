@@ -111,7 +111,7 @@ export default function PlatformerGame() {
             {hud.phase === "levelclear" && (
               <Panel
                 title={`WORLD ${hud.level} CLEAR`}
-                subtitle={`Next up — ${hud.levelName === "" ? "" : "a brand new world"}`}
+                subtitle="A brand new world awaits"
                 body={
                   <div className="space-y-1 text-[10px] opacity-85">
                     <p>SCORE {hud.score}</p>
