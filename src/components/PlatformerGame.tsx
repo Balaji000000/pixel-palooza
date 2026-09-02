@@ -11,6 +11,7 @@ export default function PlatformerGame() {
   const gameRef = useRef<Game | null>(null);
   const [hud, setHud] = useState<HudState>({
     lives: 3, health: 100, coins: 0, score: 0, time: 300, phase: "start", big: false,
+    level: 1, levelName: "GREEN HILLS", totalLevels: 10,
   });
 
   useEffect(() => {
@@ -56,11 +57,17 @@ export default function PlatformerGame() {
     gameRef.current?.start();
   }, []);
 
+  const nextLevel = useCallback(() => {
+    unlockAudio();
+    gameRef.current?.nextLevel();
+  }, []);
+
   const overlay = hud.phase !== "playing";
 
   return (
     <div className="w-full max-w-[1000px] px-3">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border-4 border-hud-border bg-hud px-4 py-3 font-pixel text-xs text-hud-foreground shadow-arcade">
+        <Stat label="LEVEL" value={`${hud.level}/${hud.totalLevels}`} tone="gold" />
         <Stat label="LIVES" value={`x${Math.max(0, hud.lives)}`} tone="danger" />
         <Stat label="COINS" value={`x${String(hud.coins).padStart(2, "0")}`} tone="gold" />
         <Stat label="SCORE" value={String(hud.score).padStart(6, "0")} />
@@ -76,6 +83,8 @@ export default function PlatformerGame() {
         </div>
       </div>
 
+      <p className="mb-2 text-center font-pixel text-[9px] text-hud-foreground/70">WORLD {hud.level} — {hud.levelName}</p>
+
       <div className="relative overflow-hidden rounded-xl border-4 border-hud-border shadow-arcade">
         <canvas
           ref={canvasRef}
@@ -86,23 +95,38 @@ export default function PlatformerGame() {
           <div className="absolute inset-0 flex items-center justify-center bg-overlay px-6 text-center backdrop-blur-sm animate-fade-in">
             {hud.phase === "start" && (
               <Panel
-                title="ACORN RUN"
-                subtitle="A retro side-scrolling adventure"
+                title="SPEED RUN"
+                subtitle="Play as IShowSpeed across 10 worlds"
                 body={
                   <ul className="space-y-1 text-[10px] leading-relaxed opacity-80">
                     <li>← → / A D — move</li>
                     <li>SPACE / W / ↑ — jump (hold to jump higher)</li>
-                    <li>Stomp enemies, smash bricks, grab the flag at the end</li>
+                    <li>Clear 10 themed worlds — Ronaldo waits at the finish</li>
                   </ul>
                 }
                 action="START GAME"
                 onAction={startGame}
               />
             )}
+            {hud.phase === "levelclear" && (
+              <Panel
+                title={`WORLD ${hud.level} CLEAR`}
+                subtitle="A brand new world awaits"
+                body={
+                  <div className="space-y-1 text-[10px] opacity-85">
+                    <p>SCORE {hud.score}</p>
+                    <p>COINS {hud.coins}</p>
+                    <p>LIVES {hud.lives}</p>
+                  </div>
+                }
+                action="NEXT LEVEL"
+                onAction={nextLevel}
+              />
+            )}
             {hud.phase === "gameover" && (
               <Panel
                 title="GAME OVER"
-                subtitle="The acorns got you."
+                subtitle="Speed is down. Run it back."
                 body={
                   <div className="space-y-1 text-[10px] opacity-85">
                     <p>SCORE {hud.score}</p>
@@ -115,8 +139,8 @@ export default function PlatformerGame() {
             )}
             {hud.phase === "win" && (
               <Panel
-                title="VICTORY!"
-                subtitle="You reached the flagpole"
+                title="SIUUU!"
+                subtitle="Speed cleared all 10 worlds — Ronaldo appears!"
                 body={
                   <div className="space-y-1 text-[10px] opacity-90">
                     <p>COINS COLLECTED — {hud.coins}</p>
