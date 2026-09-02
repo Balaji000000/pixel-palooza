@@ -520,26 +520,27 @@ export class Game {
   }
 
   private drawSky(ctx: CanvasRenderingContext2D) {
+    const t = this.theme;
     const g = ctx.createLinearGradient(0, 0, 0, VIEW_H);
-    g.addColorStop(0, "#3aa7ff");
-    g.addColorStop(0.55, "#8fd8ff");
-    g.addColorStop(1, "#d8f2ff");
+    g.addColorStop(0, t.sky[0]);
+    g.addColorStop(0.55, t.sky[1]);
+    g.addColorStop(1, t.sky[2]);
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, VIEW_W, VIEW_H);
 
     // far hills
-    ctx.fillStyle = "#5bbf7a";
+    ctx.fillStyle = t.hillFar;
     const off2 = -this.camX * 0.25;
-    for (let i = -1; i < 12; i++) {
+    for (let i = -1; i < 20; i++) {
       const x = off2 + i * 360;
       if (x < -400 || x > VIEW_W + 400) continue;
       ctx.beginPath();
       ctx.arc(x, 470, 190, Math.PI, 0);
       ctx.fill();
     }
-    ctx.fillStyle = "#3f9e60";
+    ctx.fillStyle = t.hillNear;
     const off3 = -this.camX * 0.45;
-    for (let i = -1; i < 14; i++) {
+    for (let i = -1; i < 24; i++) {
       const x = off3 + i * 280 + 120;
       if (x < -300 || x > VIEW_W + 300) continue;
       ctx.beginPath();
@@ -547,18 +548,43 @@ export class Game {
       ctx.fill();
     }
 
-    // clouds
-    const off1 = -this.camX * 0.12;
-    ctx.fillStyle = "rgba(255,255,255,0.92)";
-    const clouds: [number, number, number][] = [
-      [60, 90, 1], [360, 60, 0.8], [640, 120, 1.1], [900, 70, 0.9],
-      [1200, 110, 1], [1500, 65, 0.85], [1800, 120, 1.05], [2100, 80, 0.95],
-    ];
-    for (const [cx, cy, s] of clouds) {
-      const x = ((cx + off1) % 2400 + 2400) % 2400 - 200;
-      if (x < -220 || x > VIEW_W + 220) continue;
-      this.cloud(ctx, x, cy, s);
+    this.drawDecor(ctx);
+  }
+
+  private drawDecor(ctx: CanvasRenderingContext2D) {
+    const t = this.theme;
+    ctx.fillStyle = t.decorColor;
+    if (t.decor === "clouds") {
+      const off1 = -this.camX * 0.12;
+      const clouds: [number, number, number][] = [
+        [60, 90, 1], [360, 60, 0.8], [640, 120, 1.1], [900, 70, 0.9],
+        [1200, 110, 1], [1500, 65, 0.85], [1800, 120, 1.05], [2100, 80, 0.95],
+      ];
+      for (const [cx, cy, sc] of clouds) {
+        const x = ((cx + off1) % 2400 + 2400) % 2400 - 200;
+        if (x < -220 || x > VIEW_W + 220) continue;
+        this.cloud(ctx, x, cy, sc);
+      }
+      return;
     }
+    const off = -this.camX * (t.decor === "stars" ? 0.06 : 0.18);
+    for (let i = 0; i < 60; i++) {
+      const seed = i * 97.13;
+      const bx = (seed * 37) % 2400;
+      const by = (seed * 53) % 380;
+      let x = ((bx + off) % 2400 + 2400) % 2400 - 200;
+      let y = by + 20;
+      if (t.decor === "snow") y = (by + this.flagAnim * 0.9 + i * 7) % 480;
+      if (t.decor === "embers") y = 480 - ((by + this.flagAnim * 1.2 + i * 9) % 480);
+      if (t.decor === "bubbles") y = 480 - ((by + this.flagAnim * 0.7 + i * 11) % 480);
+      if (x < -20 || x > VIEW_W + 20) continue;
+      const r = t.decor === "stars" ? 1.6 + (i % 3) * 0.6 : 2 + (i % 4);
+      ctx.globalAlpha = t.decor === "stars" ? 0.5 + Math.abs(Math.sin(this.flagAnim * 0.05 + i)) * 0.5 : 0.85;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
   }
 
   private cloud(ctx: CanvasRenderingContext2D, x: number, y: number, s: number) {
@@ -573,11 +599,12 @@ export class Game {
   private drawPlatforms(ctx: CanvasRenderingContext2D) {
     for (const s of this.level.platforms) {
       const isGround = s.y >= GROUND_Y;
-      ctx.fillStyle = isGround ? "#7c4a21" : "#8a5a2b";
+      const t = this.theme;
+      ctx.fillStyle = isGround ? t.groundBody : t.platformBody;
       ctx.fillRect(s.x, s.y + 12, s.w, s.h - 12);
-      ctx.fillStyle = "#57c94f";
+      ctx.fillStyle = t.groundTop;
       ctx.fillRect(s.x, s.y, s.w, 14);
-      ctx.fillStyle = "#3fa63a";
+      ctx.fillStyle = "rgba(0,0,0,0.18)";
       ctx.fillRect(s.x, s.y + 11, s.w, 4);
       ctx.fillStyle = "rgba(0,0,0,0.12)";
       for (let x = s.x; x < s.x + s.w; x += 20) {
@@ -723,28 +750,90 @@ export class Game {
     const p = this.player;
     if (p.invuln > 0 && Math.floor(p.invuln / 4) % 2 === 0) return;
     const x = p.x, y = p.y, w = p.w, h = p.h;
-    // legs
     const stride = p.onGround ? Math.sin(p.anim) * 4 : 3;
-    ctx.fillStyle = "#2b4ea8";
-    ctx.fillRect(x + 3, y + h - 12, 10, 12 - Math.max(0, stride));
-    ctx.fillRect(x + w - 13, y + h - 12, 10, 12 + Math.min(0, stride));
-    // body
-    ctx.fillStyle = "#e03b2f";
+    // legs - black shorts / socks
+    ctx.fillStyle = "#1b1b22";
+    ctx.fillRect(x + 3, y + h - 14, 10, 14 - Math.max(0, stride));
+    ctx.fillRect(x + w - 13, y + h - 14, 10, 14 + Math.min(0, stride));
+    // red jersey
+    ctx.fillStyle = "#e5202a";
     ctx.fillRect(x, y + h * 0.42, w, h * 0.42);
-    ctx.fillStyle = "#2b4ea8";
-    ctx.fillRect(x + w * 0.28, y + h * 0.45, w * 0.44, h * 0.4);
+    ctx.fillStyle = "#b3161e";
+    ctx.fillRect(x, y + h * 0.72, w, h * 0.12);
+    // number 7
+    ctx.fillStyle = "#fff4c2";
+    ctx.font = `bold ${Math.round(h * 0.2)}px monospace`;
+    ctx.textAlign = "center";
+    ctx.fillText("7", x + w / 2, y + h * 0.68);
+    ctx.textAlign = "left";
+    // gold chain
+    ctx.fillStyle = "#ffd23f";
+    ctx.fillRect(x + w * 0.25, y + h * 0.44, w * 0.5, 3);
     // head
-    ctx.fillStyle = "#f6c9a0";
+    ctx.fillStyle = "#7a4a26";
     ctx.fillRect(x + 3, y + h * 0.14, w - 6, h * 0.3);
-    // cap
-    ctx.fillStyle = "#e03b2f";
-    ctx.fillRect(x + 1, y + h * 0.05, w - 2, h * 0.12);
-    ctx.fillRect(p.face === 1 ? x + w - 4 : x - 8, y + h * 0.12, 12, 5);
-    // eye
-    ctx.fillStyle = "#1c1a2b";
-    ctx.fillRect(p.face === 1 ? x + w - 11 : x + 7, y + h * 0.24, 4, 5);
-    // mustache
-    ctx.fillRect(p.face === 1 ? x + w - 14 : x + 5, y + h * 0.33, 9, 3);
+    // hair (short dark, twists)
+    ctx.fillStyle = "#161014";
+    ctx.fillRect(x + 2, y + h * 0.1, w - 4, h * 0.09);
+    ctx.fillRect(x + 4, y + h * 0.06, 5, 5);
+    ctx.fillRect(x + w * 0.45, y + h * 0.05, 5, 6);
+    ctx.fillRect(x + w - 10, y + h * 0.06, 5, 5);
+    // eyes
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(p.face === 1 ? x + w - 14 : x + 6, y + h * 0.23, 5, 5);
+    ctx.fillRect(p.face === 1 ? x + w - 22 : x + 14, y + h * 0.23, 5, 5);
+    ctx.fillStyle = "#100c10";
+    ctx.fillRect(p.face === 1 ? x + w - 13 : x + 7, y + h * 0.245, 3, 3);
+    ctx.fillRect(p.face === 1 ? x + w - 21 : x + 15, y + h * 0.245, 3, 3);
+    // shouting mouth
+    ctx.fillStyle = "#2a1010";
+    ctx.fillRect(x + w * 0.3, y + h * 0.34, w * 0.4, 5);
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(x + w * 0.3, y + h * 0.34, w * 0.4, 2);
+  }
+
+  /** Cristiano Ronaldo cheering at the final flag */
+  private drawRonaldo(ctx: CanvasRenderingContext2D, x: number, y: number) {
+    const bob = Math.sin(this.flagAnim * 0.08) * 4;
+    const w = 34, h = 56;
+    const top = y - h + bob;
+    // arms raised
+    ctx.fillStyle = "#c98d61";
+    ctx.fillRect(x - 8, top + 2, 8, 22);
+    ctx.fillRect(x + w, top + 2, 8, 22);
+    // legs
+    ctx.fillStyle = "#f2f4f8";
+    ctx.fillRect(x + 4, top + h - 18, 10, 18);
+    ctx.fillRect(x + w - 14, top + h - 18, 10, 18);
+    // white kit
+    ctx.fillStyle = "#f7f9fc";
+    ctx.fillRect(x, top + 18, w, h - 34);
+    ctx.fillStyle = "#1f3f8f";
+    ctx.fillRect(x, top + h - 20, w, 4);
+    ctx.fillStyle = "#1f3f8f";
+    ctx.font = "bold 13px monospace";
+    ctx.textAlign = "center";
+    ctx.fillText("7", x + w / 2, top + 34);
+    ctx.textAlign = "left";
+    // head
+    ctx.fillStyle = "#d69a6c";
+    ctx.fillRect(x + 7, top + 2, w - 14, 18);
+    ctx.fillStyle = "#2a1b12";
+    ctx.fillRect(x + 6, top, w - 12, 6);
+    ctx.fillStyle = "#141018";
+    ctx.fillRect(x + 11, top + 9, 3, 3);
+    ctx.fillRect(x + w - 14, top + 9, 3, 3);
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(x + 12, top + 15, w - 24, 3);
+    // SIUUU label
+    ctx.font = "bold 14px monospace";
+    ctx.fillStyle = "#ffd23f";
+    ctx.strokeStyle = "rgba(0,0,0,0.6)";
+    ctx.lineWidth = 3;
+    ctx.textAlign = "center";
+    ctx.strokeText("SIUUU!", x + w / 2, top - 10);
+    ctx.fillText("SIUUU!", x + w / 2, top - 10);
+    ctx.textAlign = "left";
   }
 
   private drawParticles(ctx: CanvasRenderingContext2D) {
@@ -788,6 +877,10 @@ export class Game {
     // gate base
     ctx.fillStyle = "#4a3524";
     ctx.fillRect(x - 14, GROUND_Y - 34, 36, 34);
+
+    if (this.levelIndex >= TOTAL_LEVELS) {
+      this.drawRonaldo(ctx, x + 70, GROUND_Y);
+    }
   }
 
   keyDown(code: string) {
