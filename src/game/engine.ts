@@ -2,15 +2,15 @@ import { sfx } from "./audio";
 import {
   createLevel,
   GROUND_Y,
-  LEVEL_END,
   TILE,
+  TOTAL_LEVELS,
   WORLD_H,
-  WORLD_W,
   type Block,
   type Coin,
   type Enemy,
   type Level,
   type Rect,
+  type Theme,
 } from "./level";
 
 export const VIEW_W = 960;
@@ -24,7 +24,7 @@ const JUMP_V = -12.4;
 const COYOTE = 6; // frames (~0.1s)
 const BUFFER = 8;
 
-export type Phase = "start" | "playing" | "dead" | "gameover" | "win";
+export type Phase = "start" | "playing" | "dead" | "gameover" | "win" | "levelclear";
 
 export type HudState = {
   lives: number;
@@ -34,6 +34,9 @@ export type HudState = {
   time: number;
   phase: Phase;
   big: boolean;
+  level: number;
+  levelName: string;
+  totalLevels: number;
 };
 
 type Particle = { x: number; y: number; vx: number; vy: number; life: number; max: number; color: string; size: number };
@@ -52,7 +55,8 @@ function overlap(a: Rect, b: Rect) {
 
 export class Game {
   keys = new Set<string>();
-  level: Level = createLevel();
+  levelIndex = 1;
+  level: Level = createLevel(1);
   player!: Player;
   particles: Particle[] = [];
   mushrooms: Mushroom[] = [];
@@ -78,6 +82,7 @@ export class Game {
     return {
       lives: this.lives, health: this.health, coins: this.coins, score: this.score,
       time: Math.max(0, Math.ceil(this.time)), phase: this.phase, big: this.player.big,
+      level: this.level.index, levelName: this.level.theme.name, totalLevels: TOTAL_LEVELS,
     };
   }
 
@@ -86,7 +91,8 @@ export class Game {
   }
 
   resetAll() {
-    this.level = createLevel();
+    this.levelIndex = 1;
+    this.level = createLevel(1);
     this.lives = 3;
     this.health = 100;
     this.coins = 0;
@@ -114,6 +120,31 @@ export class Game {
     this.resetAll();
     this.phase = "playing";
     this.emitHud();
+  }
+
+  /** advance to next level, keeping score / lives / coins */
+  nextLevel() {
+    if (this.levelIndex >= TOTAL_LEVELS) return;
+    this.levelIndex += 1;
+    this.loadLevel(this.levelIndex);
+    this.phase = "playing";
+    this.emitHud();
+  }
+
+  private loadLevel(idx: number) {
+    this.level = createLevel(idx);
+    this.time = 300;
+    this.flagAnim = 0;
+    this.particles = [];
+    this.mushrooms = [];
+    this.projectiles = [];
+    this.popups = [];
+    this.camX = 0;
+    this.spawnPlayer();
+  }
+
+  private get theme(): Theme {
+    return this.level.theme;
   }
 
   private coyote = 0;
@@ -211,15 +242,15 @@ export class Game {
     this.collectCoins();
 
     // goal
-    if (p.x + p.w > LEVEL_END) {
-      this.phase = "win";
-      this.score += Math.ceil(this.time) * 10 + this.lives * 500;
+    if (p.x + p.w > this.level.levelEnd) {
+      this.score += Math.ceil(this.time) * 10 + this.lives * 200;
+      this.phase = this.levelIndex >= TOTAL_LEVELS ? "win" : "levelclear";
       sfx.win();
       this.emitHud();
     }
 
     // camera
-    const target = Math.max(0, Math.min(p.x + p.w / 2 - VIEW_W * 0.4, WORLD_W - VIEW_W));
+    const target = Math.max(0, Math.min(p.x + p.w / 2 - VIEW_W * 0.4, this.level.worldW - VIEW_W));
     this.camX += (target - this.camX) * Math.min(1, 0.12 * dt);
   }
 
@@ -739,7 +770,7 @@ export class Game {
   }
 
   private drawFlag(ctx: CanvasRenderingContext2D) {
-    const x = LEVEL_END;
+    const x = this.level.levelEnd;
     ctx.fillStyle = "#cfd6dd";
     ctx.fillRect(x, 160, 8, GROUND_Y - 160);
     ctx.fillStyle = "#ffd23f";
@@ -768,4 +799,4 @@ export class Game {
   }
 }
 
-export { WORLD_W, WORLD_H };
+export { WORLD_H };
