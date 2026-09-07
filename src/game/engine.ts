@@ -20,7 +20,7 @@ const GRAVITY = 0.62;
 const MOVE_ACC = 0.7;
 const MAX_SPEED = 4.6;
 const FRICTION = 0.78;
-const JUMP_V = -12.4;
+const JUMP_V = -13.6;
 const COYOTE = 6; // frames (~0.1s)
 const BUFFER = 8;
 
@@ -47,6 +47,7 @@ type Popup = { x: number; y: number; life: number; text: string };
 type Player = {
   x: number; y: number; w: number; h: number; vx: number; vy: number;
   onGround: boolean; face: 1 | -1; big: boolean; invuln: number; anim: number; dead: boolean; deadTimer: number;
+  jumps: number;
 };
 
 function overlap(a: Rect, b: Rect) {
@@ -110,7 +111,7 @@ export class Game {
   spawnPlayer() {
     this.player = {
       x: 80, y: GROUND_Y - 44, w: 30, h: 44, vx: 0, vy: 0, onGround: false,
-      face: 1, big: false, invuln: 60, anim: 0, dead: false, deadTimer: 0,
+      face: 1, big: false, invuln: 60, anim: 0, dead: false, deadTimer: 0, jumps: 2,
     };
     this.health = 100;
     this.projectiles = [];
@@ -216,11 +217,14 @@ export class Game {
     if (this.buffer > 0) this.buffer -= dt;
     if (this.coyote > 0) this.coyote -= dt;
 
-    if (this.buffer > 0 && this.coyote > 0) {
-      p.vy = JUMP_V;
+    if (this.buffer > 0 && (this.coyote > 0 || p.jumps > 0)) {
+      const airJump = this.coyote <= 0 && !p.onGround;
+      p.vy = airJump ? JUMP_V * 0.92 : JUMP_V;
       p.onGround = false;
       this.coyote = 0;
       this.buffer = 0;
+      p.jumps -= 1;
+      if (airJump) this.burst(p.x + p.w / 2, p.y + p.h, "oklch(0.9 0.1 220)", 6, 2);
       sfx.jump();
     }
     // variable jump height
@@ -231,7 +235,7 @@ export class Game {
 
     this.movePlayer(dt);
 
-    if (p.onGround) this.coyote = COYOTE;
+    if (p.onGround) { this.coyote = COYOTE; p.jumps = 2; }
     if (p.invuln > 0) p.invuln -= dt;
 
     if (p.y > WORLD_H + 120) this.killPlayer(true);

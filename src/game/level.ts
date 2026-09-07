@@ -176,7 +176,7 @@ export function createLevel(levelIndex = 1): Level {
   const floatCount = 6 + Math.floor(i / 2);
   for (let f = 0; f < floatCount; f++) {
     const x = 420 + f * ((levelEnd - 600) / floatCount) + rand() * 80;
-    const y = 220 + Math.round(rand() * 140);
+    const y = 300 + Math.round(rand() * 100);
     const w = 140 + Math.round(rand() * 110);
     platforms.push({ x: Math.round(x), y, w, h: 24 });
   }
@@ -186,7 +186,7 @@ export function createLevel(levelIndex = 1): Level {
   const clusters = 4 + Math.floor(i / 3);
   for (let c = 0; c < clusters; c++) {
     const bx = 380 + c * ((levelEnd - 600) / clusters) + rand() * 60;
-    const by = 200 + Math.round(rand() * 150);
+    const by = 240 + Math.round(rand() * 90);
     const n = 2 + Math.floor(rand() * 2);
     for (let k = 0; k < n; k++) {
       const x = Math.round(bx + k * TILE);
