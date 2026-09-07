@@ -29,11 +29,15 @@ export default function PlatformerGame() {
 
     let raf = 0;
     let last = performance.now();
+    const w = window as unknown as { __game?: Game; __miny?: number };
+    w.__game = game;
+    w.__miny = 9999;
     const loop = (now: number) => {
       const dt = Math.min(50, now - last) / (1000 / 60);
       last = now;
       game.update(dt);
       game.draw(ctx);
+      w.__miny = Math.min(w.__miny ?? 9999, game.player.y);
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
@@ -100,7 +104,7 @@ export default function PlatformerGame() {
                 body={
                   <ul className="space-y-1 text-[10px] leading-relaxed opacity-80">
                     <li>← → / A D — move</li>
-                    <li>SPACE / W / ↑ — jump (hold to jump higher)</li>
+                    <li>SPACE / W / ↑ — jump (hold for higher, press again in air to double jump)</li>
                     <li>Clear 10 themed worlds — Ronaldo waits at the finish</li>
                   </ul>
                 }
