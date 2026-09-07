@@ -29,11 +29,15 @@ export default function PlatformerGame() {
 
     let raf = 0;
     let last = performance.now();
+    const w = window as unknown as { __game?: Game; __miny?: number };
+    w.__game = game;
+    w.__miny = 9999;
     const loop = (now: number) => {
       const dt = Math.min(50, now - last) / (1000 / 60);
       last = now;
       game.update(dt);
       game.draw(ctx);
+      w.__miny = Math.min(w.__miny ?? 9999, game.player.y);
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
